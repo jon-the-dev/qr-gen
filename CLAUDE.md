@@ -15,11 +15,12 @@ qr-gen/
 - **HTML5** - Structure and layout
 - **CSS3** - Styling with modern gradient backgrounds and responsive design
 - **Vanilla JavaScript** - Application logic
-- **QRCode.js** - External library loaded via CDN (https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js)
+- **qrcode-generator** - External library loaded via CDN (https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js)
 
 ## Features
 - Generate QR codes in multiple sizes (0.5", 0.75", 1.0", 1.5" squares)
 - All QR codes generated at 300 DPI for optimal print quality
+- **Character counter** with 100 character limit for compact QR codes
 - Print mode with size selection
 - Download individual QR codes as PNG files
 - Direct print functionality
@@ -31,7 +32,7 @@ qr-gen/
 2. Application validates the URL format
 3. Generates QR codes in 4 different sizes simultaneously
 4. User can select a specific size to download or print via the Print Mode modal
-5. QR codes use error correction level H (highest) for reliability
+5. QR codes use error correction level L (lowest) for compact size
 
 ## QR Code Sizes
 - **0.5" (150px)** - Tiny, great for small spaces
@@ -41,7 +42,7 @@ qr-gen/
 
 ## Dependencies
 No build dependencies required. The application uses:
-- QRCode.js from CDN (no npm/node_modules)
+- qrcode-generator from CDN (no npm/node_modules)
 
 ## Development
 This is a static site that can be:

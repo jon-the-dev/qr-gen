@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Generator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -190,6 +190,29 @@
             text-decoration: none;
         }
 
+        .input-wrapper {
+            position: relative;
+        }
+
+        .char-counter {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: #888;
+            pointer-events: none;
+        }
+
+        .char-counter.warning {
+            color: #f5576c;
+            font-weight: 600;
+        }
+
+        .input-wrapper input[type="text"] {
+            padding-right: 70px;
+        }
+
         /* Modal Styles */
         .modal {
             display: none;
@@ -319,7 +342,10 @@
 
         <div class="input-group">
             <label for="url">Document URL</label>
-            <input type="text" id="url" placeholder="https://docs.example.com/page" />
+            <div class="input-wrapper">
+                <input type="text" id="url" placeholder="https://docs.example.com/page" maxlength="100" oninput="updateCharCounter()" />
+                <span id="charCounter" class="char-counter">0/100</span>
+            </div>
         </div>
 
         <button onclick="generateQR()">Generate QR Codes (All Sizes)</button>
@@ -332,11 +358,11 @@
 
         <div class="instructions">
             <strong>💡 Pro Tips:</strong><br>
+            • URLs limited to 100 characters for compact QR codes<br>
             • All sizes are generated at 300 DPI for optimal print quality<br>
             • 0.5" QR codes are great for small spaces but may be harder to scan<br>
             • Test QR codes before printing stickers<br>
-            • Use Print Mode to select and download your preferred size<br>
-            • Make sure URLs are publicly accessible
+            • Use Print Mode to select and download your preferred size
         </div>
 
         <div class="footer">
@@ -372,8 +398,58 @@
             { label: '1.5" Square', inches: 1.5, pixels: 450, desc: 'Large - Easy to scan from distance' }
         ];
 
+        const MAX_CHARS = 100;
         let qrCodes = [];
         let selectedSizeIndex = 2; // Default to 1.0" size
+
+        function updateCharCounter() {
+            const url = document.getElementById('url').value;
+            const counter = document.getElementById('charCounter');
+            const remaining = MAX_CHARS - url.length;
+            counter.textContent = `${url.length}/${MAX_CHARS}`;
+
+            if (remaining <= 10) {
+                counter.classList.add('warning');
+            } else {
+                counter.classList.remove('warning');
+            }
+        }
+
+        function createQRCanvas(text, size) {
+            // Use typeNumber 0 for auto-sizing, error correction L for smallest QR
+            const qr = qrcode(0, 'L');
+            qr.addData(text);
+            qr.make();
+
+            const moduleCount = qr.getModuleCount();
+            const cellSize = size / moduleCount;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // White background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, size, size);
+
+            // Draw QR modules
+            ctx.fillStyle = '#000000';
+            for (let row = 0; row < moduleCount; row++) {
+                for (let col = 0; col < moduleCount; col++) {
+                    if (qr.isDark(row, col)) {
+                        ctx.fillRect(
+                            Math.floor(col * cellSize),
+                            Math.floor(row * cellSize),
+                            Math.ceil(cellSize),
+                            Math.ceil(cellSize)
+                        );
+                    }
+                }
+            }
+
+            return canvas;
+        }
 
         function generateQR() {
             const url = document.getElementById('url').value.trim();
@@ -422,26 +498,18 @@
                 wrapper.id = `qr-wrapper-${index}`;
                 container.appendChild(wrapper);
 
+                // Generate QR code canvas and append
+                const canvas = createQRCanvas(url, sizeConfig.pixels);
+                wrapper.appendChild(canvas);
+
                 // Add to main container
                 qrcodeDiv.appendChild(container);
 
-                // Generate QR code
-                const qrcode = new QRCode(wrapper, {
-                    text: url,
-                    width: sizeConfig.pixels,
-                    height: sizeConfig.pixels,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-
-                qrCodes.push({ config: sizeConfig, element: wrapper, qrcode: qrcode });
+                qrCodes.push({ config: sizeConfig, element: wrapper, canvas: canvas });
             });
 
-            // Show print mode button after a brief delay to ensure QR codes are rendered
-            setTimeout(() => {
-                printModeBtn.classList.remove('hidden');
-            }, 200);
+            // Show print mode button
+            printModeBtn.classList.remove('hidden');
         }
 
         function openPrintMode() {
@@ -518,7 +586,7 @@
             }
 
             const selected = qrCodes[selectedSizeIndex];
-            const canvas = selected.element.querySelector('canvas');
+            const canvas = selected.canvas;
 
             if (!canvas) {
                 alert('QR code not found');
@@ -543,7 +611,7 @@
             }
 
             const selected = qrCodes[selectedSizeIndex];
-            const canvas = selected.element.querySelector('canvas');
+            const canvas = selected.canvas;
 
             if (!canvas) {
                 alert('QR code not found');
